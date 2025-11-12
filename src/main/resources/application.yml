@@ -1,13 +1,19 @@
 spring:
   data:
     mongodb:
-      uri: mongodb://root:secret@localhost:27017/paymentsdb?authSource=admin
-      auto-index-creation: true
+      uri: mongodb://root:secret@localhost:27017/Diary?authSource=admin
+  kafka:
+    bootstrap-servers: kafka:29092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    consumer:
+      group-id: payment-service
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "com.innowise.*"
 
 server:
-  port: 8080
-
-logging:
-  level:
-    com.innowise: DEBUG
-    org.springframework.data.mongodb: DEBUG
+  port: 8087
