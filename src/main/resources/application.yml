@@ -1,7 +1,8 @@
 spring:
   data:
     mongodb:
-      uri: mongodb://root:secret@localhost:27017/Diary?authSource=admin
+      uri: mongodb://root:secret@localhost:27017/payment?authSource=admin
+
   kafka:
     bootstrap-servers: kafka:29092
     producer:
