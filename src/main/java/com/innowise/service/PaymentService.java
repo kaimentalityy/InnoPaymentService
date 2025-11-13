@@ -6,7 +6,7 @@ import com.innowise.model.dto.PaymentStatus;
 
 public interface PaymentService {
 
-    PaymentResponseDto updatePaymentStatus(Long id, PaymentStatus newStatus);
+    PaymentResponseDto updatePaymentStatus(String id, PaymentStatus newStatus);
 
     PaymentResponseDto createPayment(PaymentCreateRequestDto dto);
 }

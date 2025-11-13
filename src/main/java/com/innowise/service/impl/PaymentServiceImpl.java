@@ -32,7 +32,7 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     @Transactional
-    public PaymentResponseDto updatePaymentStatus(Long id, PaymentStatus newStatus) {
+    public PaymentResponseDto updatePaymentStatus(String id, PaymentStatus newStatus) {
         Payment payment = paymentRepository.findById(id)
                 .orElseThrow(() -> new PaymentNotFoundException());
         payment.setStatus(newStatus);

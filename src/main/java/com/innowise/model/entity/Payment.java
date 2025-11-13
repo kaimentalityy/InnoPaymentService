@@ -18,7 +18,7 @@ import java.time.LocalDateTime;
 public class Payment {
 
     @Id
-    private Long id;
+    private String id;
 
     private Long orderId;
 

@@ -12,7 +12,7 @@ public class PaymentCreatedEvent {
     private String eventId;
     private String eventType = "CREATE_PAYMENT";
     private LocalDateTime eventTimestamp;
-    private Long paymentId;
+    private String paymentId;
     private Long orderId;
     private Long userId;
     private BigDecimal amount;
@@ -23,7 +23,7 @@ public class PaymentCreatedEvent {
         this.eventId = java.util.UUID.randomUUID().toString();
     }
     
-    public PaymentCreatedEvent(Long paymentId, Long orderId, Long userId, 
+    public PaymentCreatedEvent(String paymentId, Long orderId, Long userId,
                              BigDecimal amount, String status) {
         this();
         this.paymentId = paymentId;
