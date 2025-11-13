@@ -15,7 +15,10 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@SpringBootTest
+@SpringBootTest(properties = {
+        "spring.kafka.admin.auto-create=false",
+        "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration"
+})
 @ActiveProfiles("ci")
 class PaymentRepositoryTest {
 
