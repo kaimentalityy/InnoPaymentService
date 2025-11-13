@@ -32,9 +32,9 @@ jobs:
         env:
           KAFKA_NODE_ID: 1
           KAFKA_PROCESS_ROLES: broker,controller
-          KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
-          KAFKA_LISTENERS: PLAINTEXT://:29092,CONTROLLER://:9093
-          KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092
+          KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+          KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,CONTROLLER://0.0.0.0:9093
+          KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:29092
           KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
           KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
           KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
@@ -42,12 +42,16 @@ jobs:
           KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
           KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
           CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+        options: >-
+          --health-cmd "kafka-broker-api-versions --bootstrap-server localhost:29092"
+          --health-interval 10s
+          --health-timeout 10s
+          --health-retries 10
 
     env:
       SPRING_PROFILES_ACTIVE: ci
-      SPRING_DATA_MONGODB_URI: mongodb://root:secret@mongodb:27017/payment?authSource=admin
-      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-      SERVER_PORT: 8087
+      SPRING_DATA_MONGODB_URI: mongodb://root:secret@localhost:27017/payment?authSource=admin
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: localhost:29092
 
     steps:
       - name: Checkout code
@@ -60,21 +64,17 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
-      - name: Wait for MongoDB and Kafka
+      - name: Wait for MongoDB
         run: |
           echo "Waiting for MongoDB..."
-          for i in {1..15}; do
-            mongosh --username root --password secret --eval 'db.adminCommand({ ping: 1 })' && echo "MongoDB is up!" && break
-            echo "Waiting..."
-            sleep 5
-          done
+          timeout 60 bash -c 'until mongosh --username root --password secret --eval "db.adminCommand({ ping: 1 })" mongodb://localhost:27017/admin > /dev/null 2>&1; do echo "Waiting..."; sleep 2; done'
+          echo "MongoDB is up!"
 
+      - name: Wait for Kafka
+        run: |
           echo "Waiting for Kafka..."
-          for i in {1..15}; do
-            nc -z kafka 29092 && echo "Kafka is up!" && break
-            echo "Waiting..."
-            sleep 5
-          done
+          timeout 60 bash -c 'until nc -z localhost 29092; do echo "Waiting..."; sleep 2; done'
+          echo "Kafka is up!"
 
       - name: Build and run tests
         run: mvn clean verify -Dspring.profiles.active=ci
@@ -106,6 +106,9 @@ jobs:
 
       - name: Run tests with coverage
         run: mvn clean verify -Dspring.profiles.active=ci
+        env:
+          SPRING_DATA_MONGODB_URI: mongodb://root:secret@localhost:27017/payment?authSource=admin
+          SPRING_KAFKA_BOOTSTRAP_SERVERS: localhost:29092
 
       - name: Run SonarQube analysis
         run: |
