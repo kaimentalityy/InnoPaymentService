@@ -164,7 +164,7 @@ jobs:
         run: |
           mvn sonar:sonar \
             -Dsonar.organization=${{ secrets.SONAR_ORGANIZATION }} \
-            -Dsonar.projectKey=kaimentalityy_inno-payment-service \
+            -Dsonar.projectKey=kaimentalityy_InnoPaymentService \
             -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
             -Dsonar.login=${{ secrets.SONAR_TOKEN }} \
             -Dsonar.coverage.jacoco.xmlReportPaths=target/jacoco-report/jacoco.xml
