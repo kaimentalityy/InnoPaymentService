@@ -19,12 +19,6 @@ jobs:
           MONGO_INITDB_ROOT_PASSWORD: secret
         ports:
           - 27017:27017
-        options: >-
-          --health-cmd "mongosh --eval 'db.runCommand({ping:1})' --quiet"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-          --health-start-period 10s
 
       kafka:
         image: confluentinc/cp-kafka:7.6.0
@@ -62,45 +56,68 @@ jobs:
 
       - name: Verify Services
         run: |
-          echo "Checking MongoDB connection..."
+          echo "=== Checking MongoDB connection ==="
           nc -zv localhost 27017 || echo "MongoDB port not reachable"
           
-          echo "Checking Kafka connection..."
+          echo ""
+          echo "=== Checking Kafka connection ==="
           nc -zv localhost 29092 || echo "Kafka port not reachable"
           
-          echo "Listing all listening ports..."
+          echo ""
+          echo "=== Listing all listening ports ==="
           sudo ss -tulpn | grep LISTEN
+          
+          echo ""
+          echo "=== Checking Docker containers ==="
+          docker ps -a
+          
+          echo ""
+          echo "=== Environment variables ==="
+          echo "SPRING_PROFILES_ACTIVE=$SPRING_PROFILES_ACTIVE"
+          echo "SPRING_DATA_MONGODB_URI=$SPRING_DATA_MONGODB_URI"
+          echo "SPRING_KAFKA_BOOTSTRAP_SERVERS=$SPRING_KAFKA_BOOTSTRAP_SERVERS"
 
       - name: Wait for MongoDB
         run: |
-          echo "Waiting for MongoDB to be ready..."
-          for i in {1..30}; do
-            if nc -z localhost 27017; then
-              echo "MongoDB port is open"
-              sleep 2
-              echo "MongoDB is ready!"
+          echo "Waiting for MongoDB..."
+          for i in {1..60}; do
+            if nc -z localhost 27017 2>/dev/null; then
+              echo "MongoDB is up!"
+              sleep 3
               exit 0
             fi
-            echo "Attempt $i: MongoDB not ready yet..."
-            sleep 2
+            echo "Waiting... ($i/60)"
+            sleep 1
           done
-          echo "MongoDB failed to start"
+          echo "ERROR: MongoDB failed to start"
+          echo "Checking Docker containers:"
+          docker ps -a
           exit 1
+
+      - name: Test MongoDB Connection
+        run: |
+          echo "Installing MongoDB client tools..."
+          wget -qO - https://www.mongodb.org/static/pgp/server-6.0.asc | sudo apt-key add -
+          echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/6.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-6.0.list
+          sudo apt-get update
+          sudo apt-get install -y mongodb-mongosh
+          
+          echo "Testing MongoDB connection..."
+          mongosh "mongodb://root:secret@localhost:27017/admin" --eval "db.runCommand({ ping: 1 })"
 
       - name: Wait for Kafka
         run: |
-          echo "Waiting for Kafka to be ready..."
-          for i in {1..30}; do
-            if nc -z localhost 29092; then
-              echo "Kafka port is open"
+          echo "Waiting for Kafka..."
+          for i in {1..60}; do
+            if nc -z localhost 29092 2>/dev/null; then
+              echo "Kafka is up!"
               sleep 3
-              echo "Kafka is ready!"
               exit 0
             fi
-            echo "Attempt $i: Kafka not ready yet..."
-            sleep 2
+            echo "Waiting... ($i/60)"
+            sleep 1
           done
-          echo "Kafka failed to start"
+          echo "ERROR: Kafka failed to start"
           exit 1
 
       - name: Verify Configuration
