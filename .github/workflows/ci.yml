@@ -153,7 +153,7 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/payment-service:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/payment-service:${{ github.sha }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/payment_service:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/payment_service:${{ github.sha }}
           labels: |
             org.opencontainers.image.source=${{ github.event.repository.html_url }}
