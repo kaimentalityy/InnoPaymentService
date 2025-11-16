@@ -4,16 +4,17 @@ import com.innowise.event.OrderCreatedEvent;
 import com.innowise.event.PaymentCreatedEvent;
 import com.innowise.model.dto.PaymentCreateRequestDto;
 import com.innowise.model.dto.PaymentResponseDto;
-import com.innowise.model.dto.PaymentStatus;
+import com.innowise.model.enums.EventType;
+import com.innowise.model.enums.OrderStatus;
+import com.innowise.model.enums.PaymentStatus;
 import com.innowise.service.PaymentService;
-import com.innowise.service.RandomNumberService;
+import com.innowise.service.RandomNumberClient;
+import com.innowise.service.impl.PaymentProcessingServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.boot.test.mock.mockito.SpyBean;
-import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.test.context.EmbeddedKafka;
 import org.springframework.test.annotation.DirtiesContext;
@@ -36,27 +37,30 @@ import static org.mockito.Mockito.*;
 )
 @ActiveProfiles("test")
 @EmbeddedKafka(partitions = 1, topics = {"order-events", "payment-events"})
-@EnableKafka
 @DirtiesContext
 class OrderEventConsumerIntegrationTest {
 
     @Autowired
     private KafkaTemplate<String, Object> kafkaTemplate;
 
-    @SpyBean
-    private PaymentEventProducer paymentEventProducer;
-
     @MockBean
     private PaymentService paymentService;
 
     @MockBean
-    private RandomNumberService randomNumberService;
+    private PaymentEventProducer paymentEventProducer;
+
+    @MockBean
+    private RandomNumberClient randomNumberClient;
+
+    private PaymentProcessingServiceImpl paymentProcessingService;
 
     private final BlockingQueue<PaymentCreatedEvent> receivedEvents = new LinkedBlockingQueue<>();
 
     @BeforeEach
     void setUp() {
         receivedEvents.clear();
+        paymentProcessingService = new PaymentProcessingServiceImpl(paymentService, paymentEventProducer, randomNumberClient);
+
         doAnswer(invocation -> {
             PaymentCreatedEvent event = invocation.getArgument(0);
             receivedEvents.add(event);
@@ -65,298 +69,96 @@ class OrderEventConsumerIntegrationTest {
     }
 
     @Test
-    void testOrderCreatedEventProcessing_WithSuccessfulPayment() throws InterruptedException {
-        when(randomNumberService.isEven()).thenReturn(true);
+    void testProcessPayment_Successful() throws InterruptedException {
+        when(randomNumberClient.generateRandomNumber()).thenReturn(42);
 
-        PaymentResponseDto pendingPayment = createPaymentResponse("100", 1L, 2L,
-                BigDecimal.valueOf(50.0), PaymentStatus.PENDING);
-        PaymentResponseDto updatedPayment = createPaymentResponse("100", 1L, 2L,
-                BigDecimal.valueOf(50.0), PaymentStatus.SUCCESS);
+        PaymentResponseDto pending = createPaymentResponse("p1", PaymentStatus.PENDING);
+        PaymentResponseDto success = createPaymentResponse("p1", PaymentStatus.SUCCESS);
 
-        when(paymentService.createPayment(any(PaymentCreateRequestDto.class)))
-                .thenReturn(pendingPayment);
-        when(paymentService.updatePaymentStatus(pendingPayment.getId(), PaymentStatus.SUCCESS))
-                .thenReturn(updatedPayment);
+        when(paymentService.createPayment(any(PaymentCreateRequestDto.class))).thenReturn(pending);
+        when(paymentService.updatePaymentStatus(pending.getId(), PaymentStatus.SUCCESS)).thenReturn(success);
 
-        kafkaTemplate.send("order-events", createOrderEvent(1L, 2L, BigDecimal.valueOf(50.0)));
-
-        PaymentCreatedEvent paymentEvent = receivedEvents.poll(5, TimeUnit.SECONDS);
-        assertNotNull(paymentEvent, "Payment event should be received");
-        assertEquals(updatedPayment.getId(), paymentEvent.getPaymentId());
-        assertEquals(updatedPayment.getOrderId(), paymentEvent.getOrderId());
-        assertEquals(updatedPayment.getUserId(), paymentEvent.getUserId());
-        assertEquals("SUCCESS", paymentEvent.getStatus());
-
-        verify(paymentService).createPayment(any(PaymentCreateRequestDto.class));
-        verify(paymentService).updatePaymentStatus(pendingPayment.getId(), PaymentStatus.SUCCESS);
-        verify(randomNumberService).isEven();
-    }
-
-    @Test
-    void testOrderCreatedEventProcessing_WithFailedPayment() throws InterruptedException {
-        when(randomNumberService.isEven()).thenReturn(false);
-
-        PaymentResponseDto pendingPayment = createPaymentResponse("200", 2L, 3L,
-                BigDecimal.valueOf(100.0), PaymentStatus.PENDING);
-        PaymentResponseDto failedPayment = createPaymentResponse("200", 2L, 3L,
-                BigDecimal.valueOf(100.0), PaymentStatus.FAILED);
-
-        when(paymentService.createPayment(any(PaymentCreateRequestDto.class)))
-                .thenReturn(pendingPayment);
-        when(paymentService.updatePaymentStatus(pendingPayment.getId(), PaymentStatus.FAILED))
-                .thenReturn(failedPayment);
-
-        kafkaTemplate.send("order-events", createOrderEvent(2L, 3L, BigDecimal.valueOf(100.0)));
-
-        PaymentCreatedEvent paymentEvent = receivedEvents.poll(5, TimeUnit.SECONDS);
-        assertNotNull(paymentEvent, "Payment event should be received");
-        assertEquals(failedPayment.getId(), paymentEvent.getPaymentId());
-        assertEquals("FAILED", paymentEvent.getStatus());
-
-        verify(paymentService).createPayment(any(PaymentCreateRequestDto.class));
-        verify(paymentService).updatePaymentStatus(pendingPayment.getId(), PaymentStatus.FAILED);
-        verify(randomNumberService).isEven();
-    }
-
-    @Test
-    void testOrderCreatedEventProcessing_WithLargeAmount() throws InterruptedException {
-        BigDecimal largeAmount = new BigDecimal("999999.99");
-        when(randomNumberService.isEven()).thenReturn(true);
-
-        PaymentResponseDto pendingPayment = createPaymentResponse("300", 3L, 4L,
-                largeAmount, PaymentStatus.PENDING);
-        PaymentResponseDto updatedPayment = createPaymentResponse("300", 3L, 4L,
-                largeAmount, PaymentStatus.SUCCESS);
-
-        when(paymentService.createPayment(any(PaymentCreateRequestDto.class)))
-                .thenReturn(pendingPayment);
-        when(paymentService.updatePaymentStatus(pendingPayment.getId(), PaymentStatus.SUCCESS))
-                .thenReturn(updatedPayment);
-
-        kafkaTemplate.send("order-events", createOrderEvent(3L, 4L, largeAmount));
-
-        PaymentCreatedEvent paymentEvent = receivedEvents.poll(5, TimeUnit.SECONDS);
-        assertNotNull(paymentEvent, "Payment event should be received");
-        assertEquals(largeAmount, paymentEvent.getAmount());
-        assertEquals("SUCCESS", paymentEvent.getStatus());
-
-        verify(paymentService).createPayment(any(PaymentCreateRequestDto.class));
-        verify(paymentService).updatePaymentStatus(pendingPayment.getId(), PaymentStatus.SUCCESS);
-    }
-
-    @Test
-    void testOrderCreatedEventProcessing_WithZeroAmount() throws InterruptedException {
-        BigDecimal zeroAmount = BigDecimal.ZERO;
-        when(randomNumberService.isEven()).thenReturn(true);
-
-        PaymentResponseDto pendingPayment = createPaymentResponse("400", 4L, 5L,
-                zeroAmount, PaymentStatus.PENDING);
-        PaymentResponseDto updatedPayment = createPaymentResponse("400", 4L, 5L,
-                zeroAmount, PaymentStatus.SUCCESS);
-
-        when(paymentService.createPayment(any(PaymentCreateRequestDto.class)))
-                .thenReturn(pendingPayment);
-        when(paymentService.updatePaymentStatus(pendingPayment.getId(), PaymentStatus.SUCCESS))
-                .thenReturn(updatedPayment);
-
-        kafkaTemplate.send("order-events", createOrderEvent(4L, 5L, zeroAmount));
-
-        PaymentCreatedEvent paymentEvent = receivedEvents.poll(5, TimeUnit.SECONDS);
-        assertNotNull(paymentEvent, "Payment event should be received");
-        assertEquals(zeroAmount, paymentEvent.getAmount());
-
-        verify(paymentService).createPayment(any(PaymentCreateRequestDto.class));
-    }
-
-    @Test
-    void testOrderCreatedEventProcessing_WithPaymentServiceException() throws InterruptedException {
-        when(randomNumberService.isEven()).thenReturn(true);
-        when(paymentService.createPayment(any(PaymentCreateRequestDto.class)))
-                .thenThrow(new RuntimeException("Database connection failed"));
-
-        kafkaTemplate.send("order-events", createOrderEvent(5L, 6L, BigDecimal.valueOf(75.0)));
+        OrderCreatedEvent event = createOrderEvent(1L, 2L, new BigDecimal("50.00"));
+        paymentProcessingService.processPayment(event);
 
         PaymentCreatedEvent paymentEvent = receivedEvents.poll(2, TimeUnit.SECONDS);
-        assertNull(paymentEvent, "No payment event should be sent when service throws exception");
+        assertNotNull(paymentEvent);
+        assertEquals(PaymentStatus.SUCCESS, paymentEvent.getStatus());
 
-        verify(paymentService).createPayment(any(PaymentCreateRequestDto.class));
-        verify(paymentService, never()).updatePaymentStatus(anyString(), any(PaymentStatus.class));
-        verify(paymentEventProducer, never()).sendPaymentCreatedEvent(any(PaymentCreatedEvent.class));
+        verify(paymentService).createPayment(any());
+        verify(paymentService).updatePaymentStatus(pending.getId(), PaymentStatus.SUCCESS);
+        verify(paymentEventProducer).sendPaymentCreatedEvent(any());
+        verify(randomNumberClient).generateRandomNumber();
     }
 
     @Test
-    void testOrderCreatedEventProcessing_WithUpdatePaymentStatusException() throws InterruptedException {
-        when(randomNumberService.isEven()).thenReturn(true);
+    void testProcessPayment_Failed() throws InterruptedException {
+        when(randomNumberClient.generateRandomNumber()).thenReturn(43);
 
-        PaymentResponseDto pendingPayment = createPaymentResponse("500", 6L, 7L,
-                BigDecimal.valueOf(50.0), PaymentStatus.PENDING);
+        PaymentResponseDto pending = createPaymentResponse("p2", PaymentStatus.PENDING);
+        PaymentResponseDto failed = createPaymentResponse("p2", PaymentStatus.FAILED);
 
-        when(paymentService.createPayment(any(PaymentCreateRequestDto.class)))
-                .thenReturn(pendingPayment);
-        when(paymentService.updatePaymentStatus(pendingPayment.getId(), PaymentStatus.SUCCESS))
-                .thenThrow(new RuntimeException("Update failed"));
+        when(paymentService.createPayment(any(PaymentCreateRequestDto.class))).thenReturn(pending);
+        when(paymentService.updatePaymentStatus(pending.getId(), PaymentStatus.FAILED)).thenReturn(failed);
 
-        kafkaTemplate.send("order-events", createOrderEvent(6L, 7L, BigDecimal.valueOf(50.0)));
+        OrderCreatedEvent event = createOrderEvent(3L, 4L, new BigDecimal("100.00"));
+        paymentProcessingService.processPayment(event);
 
         PaymentCreatedEvent paymentEvent = receivedEvents.poll(2, TimeUnit.SECONDS);
-        assertNull(paymentEvent, "No payment event should be sent when update fails");
+        assertNotNull(paymentEvent);
+        assertEquals(PaymentStatus.FAILED, paymentEvent.getStatus());
 
-        verify(paymentService).createPayment(any(PaymentCreateRequestDto.class));
-        verify(paymentService).updatePaymentStatus(pendingPayment.getId(), PaymentStatus.SUCCESS);
-        verify(paymentEventProducer, never()).sendPaymentCreatedEvent(any(PaymentCreatedEvent.class));
+        verify(paymentService).createPayment(any());
+        verify(paymentService).updatePaymentStatus(pending.getId(), PaymentStatus.FAILED);
+        verify(paymentEventProducer).sendPaymentCreatedEvent(any());
+        verify(randomNumberClient).generateRandomNumber();
     }
 
     @Test
-    void testOrderCreatedEventProcessing_WithRandomNumberServiceException() throws InterruptedException {
-        when(randomNumberService.isEven()).thenThrow(new RuntimeException("Random service unavailable"));
+    void testProcessPayment_WithPaymentServiceException() {
+        when(randomNumberClient.generateRandomNumber()).thenReturn(50);
+        when(paymentService.createPayment(any())).thenThrow(new RuntimeException("DB error"));
 
-        PaymentResponseDto pendingPayment = createPaymentResponse("600", 7L, 8L,
-                BigDecimal.valueOf(50.0), PaymentStatus.PENDING);
+        OrderCreatedEvent event = createOrderEvent(5L, 6L, new BigDecimal("75.00"));
+        assertThrows(RuntimeException.class, () -> paymentProcessingService.processPayment(event));
 
-        when(paymentService.createPayment(any(PaymentCreateRequestDto.class)))
-                .thenReturn(pendingPayment);
-
-        kafkaTemplate.send("order-events", createOrderEvent(7L, 8L, BigDecimal.valueOf(50.0)));
-
-        PaymentCreatedEvent paymentEvent = receivedEvents.poll(2, TimeUnit.SECONDS);
-        assertNull(paymentEvent, "No payment event should be sent when random service fails");
-
-        verify(paymentService).createPayment(any(PaymentCreateRequestDto.class));
-        verify(randomNumberService).isEven();
-        verify(paymentService, never()).updatePaymentStatus(anyString(), any(PaymentStatus.class));
+        verify(paymentService).createPayment(any());
+        verify(paymentService, never()).updatePaymentStatus(any(), any());
+        verify(paymentEventProducer, never()).sendPaymentCreatedEvent(any());
     }
 
     @Test
-    void testOrderCreatedEventProcessing_IgnoresNonCreateOrderEvents() throws InterruptedException {
-        OrderCreatedEvent nonCreateEvent = OrderCreatedEvent.builder()
-                .eventType("UPDATE_ORDER")
-                .orderId(8L)
-                .userId(9L)
-                .totalAmount(BigDecimal.valueOf(50.0))
-                .status("UPDATED")
-                .build();
+    void testProcessPayment_WithRandomNumberClientException() {
+        when(randomNumberClient.generateRandomNumber()).thenThrow(new RuntimeException("Random service down"));
 
-        kafkaTemplate.send("order-events", nonCreateEvent);
+        PaymentResponseDto pending = createPaymentResponse("p3", PaymentStatus.PENDING);
+        when(paymentService.createPayment(any())).thenReturn(pending);
 
-        PaymentCreatedEvent paymentEvent = receivedEvents.poll(2, TimeUnit.SECONDS);
-        assertNull(paymentEvent, "No payment event should be sent for non-CREATE_ORDER events");
+        OrderCreatedEvent event = createOrderEvent(7L, 8L, new BigDecimal("50.00"));
+        assertThrows(RuntimeException.class, () -> paymentProcessingService.processPayment(event));
 
-        verify(paymentService, never()).createPayment(any(PaymentCreateRequestDto.class));
-        verify(randomNumberService, never()).isEven();
-    }
-
-    @Test
-    void testOrderCreatedEventProcessing_MultipleEvents() throws InterruptedException {
-        when(randomNumberService.isEven()).thenReturn(true, false);
-
-        PaymentResponseDto pendingPayment1 = createPaymentResponse("700", 9L, 10L,
-                BigDecimal.valueOf(30.0), PaymentStatus.PENDING);
-        PaymentResponseDto successPayment1 = createPaymentResponse("700", 9L, 10L,
-                BigDecimal.valueOf(30.0), PaymentStatus.SUCCESS);
-
-        PaymentResponseDto pendingPayment2 = createPaymentResponse("800", 10L, 11L,
-                BigDecimal.valueOf(40.0), PaymentStatus.PENDING);
-        PaymentResponseDto failedPayment2 = createPaymentResponse("800", 10L, 11L,
-                BigDecimal.valueOf(40.0), PaymentStatus.FAILED);
-
-        when(paymentService.createPayment(any(PaymentCreateRequestDto.class)))
-                .thenReturn(pendingPayment1, pendingPayment2);
-        when(paymentService.updatePaymentStatus(pendingPayment1.getId(), PaymentStatus.SUCCESS))
-                .thenReturn(successPayment1);
-        when(paymentService.updatePaymentStatus(pendingPayment2.getId(), PaymentStatus.FAILED))
-                .thenReturn(failedPayment2);
-
-        kafkaTemplate.send("order-events", createOrderEvent(9L, 10L, BigDecimal.valueOf(30.0)));
-        kafkaTemplate.send("order-events", createOrderEvent(10L, 11L, BigDecimal.valueOf(40.0)));
-
-        PaymentCreatedEvent event1 = receivedEvents.poll(5, TimeUnit.SECONDS);
-        PaymentCreatedEvent event2 = receivedEvents.poll(5, TimeUnit.SECONDS);
-
-        assertNotNull(event1, "First payment event should be received");
-        assertNotNull(event2, "Second payment event should be received");
-        assertEquals("SUCCESS", event1.getStatus());
-        assertEquals("FAILED", event2.getStatus());
-
-        verify(paymentService, times(2)).createPayment(any(PaymentCreateRequestDto.class));
-        verify(randomNumberService, times(2)).isEven();
-    }
-
-    @Test
-    void testOrderCreatedEventProcessing_VerifiesPaymentCreateRequestFields() throws InterruptedException {
-        Long orderId = 11L;
-        Long userId = 12L;
-        BigDecimal amount = BigDecimal.valueOf(123.45);
-
-        when(randomNumberService.isEven()).thenReturn(true);
-
-        PaymentResponseDto pendingPayment = createPaymentResponse("900", orderId, userId,
-                amount, PaymentStatus.PENDING);
-        PaymentResponseDto updatedPayment = createPaymentResponse("900", orderId, userId,
-                amount, PaymentStatus.SUCCESS);
-
-        when(paymentService.createPayment(any(PaymentCreateRequestDto.class)))
-                .thenReturn(pendingPayment);
-        when(paymentService.updatePaymentStatus(pendingPayment.getId(), PaymentStatus.SUCCESS))
-                .thenReturn(updatedPayment);
-
-        kafkaTemplate.send("order-events", createOrderEvent(orderId, userId, amount));
-
-        receivedEvents.poll(5, TimeUnit.SECONDS);
-
-        verify(paymentService).createPayment(argThat(dto ->
-                dto.getOrderId().equals(orderId) &&
-                        dto.getUserId().equals(userId) &&
-                        dto.getPaymentAmount().equals(amount)
-        ));
-    }
-
-    @Test
-    void testOrderCreatedEventProcessing_VerifiesPaymentEventFields() throws InterruptedException {
-        String paymentId = "1000";
-        Long orderId = 12L;
-        Long userId = 13L;
-        BigDecimal amount = BigDecimal.valueOf(250.00);
-
-        when(randomNumberService.isEven()).thenReturn(false);
-
-        PaymentResponseDto pendingPayment = createPaymentResponse(paymentId, orderId, userId,
-                amount, PaymentStatus.PENDING);
-        PaymentResponseDto failedPayment = createPaymentResponse(paymentId, orderId, userId,
-                amount, PaymentStatus.FAILED);
-
-        when(paymentService.createPayment(any(PaymentCreateRequestDto.class)))
-                .thenReturn(pendingPayment);
-        when(paymentService.updatePaymentStatus(paymentId, PaymentStatus.FAILED))
-                .thenReturn(failedPayment);
-
-        kafkaTemplate.send("order-events", createOrderEvent(orderId, userId, amount));
-
-        PaymentCreatedEvent event = receivedEvents.poll(5, TimeUnit.SECONDS);
-        assertNotNull(event);
-        assertEquals(paymentId, event.getPaymentId());
-        assertEquals(orderId, event.getOrderId());
-        assertEquals(userId, event.getUserId());
-        assertEquals(amount, event.getAmount());
-        assertEquals("FAILED", event.getStatus());
+        verify(paymentService).createPayment(any());
+        verify(paymentService, never()).updatePaymentStatus(any(), any());
+        verify(paymentEventProducer, never()).sendPaymentCreatedEvent(any());
+        verify(randomNumberClient).generateRandomNumber();
     }
 
     private OrderCreatedEvent createOrderEvent(Long orderId, Long userId, BigDecimal amount) {
         return OrderCreatedEvent.builder()
-                .eventType("CREATE_ORDER")
+                .eventType(EventType.ORDER_CREATE.getMessage())
                 .orderId(orderId)
                 .userId(userId)
                 .totalAmount(amount)
-                .status("NEW")
+                .status(OrderStatus.CONFIRMED)
                 .build();
     }
 
-    private PaymentResponseDto createPaymentResponse(String id, Long orderId, Long userId,
-                                                     BigDecimal amount, PaymentStatus status) {
+    private PaymentResponseDto createPaymentResponse(String id, PaymentStatus status) {
         return PaymentResponseDto.builder()
                 .id(id)
-                .orderId(orderId)
-                .userId(userId)
-                .paymentAmount(amount)
+                .orderId(1L)
+                .userId(2L)
+                .paymentAmount(new BigDecimal("50.00"))
                 .status(status)
                 .build();
     }

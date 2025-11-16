@@ -1,38 +1,36 @@
 package com.innowise.exception;
 
 import com.innowise.model.dto.ErrorDto;
+import com.innowise.model.enums.ErrorMessage;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-/**
- * Global exception handler for Payment Service.
- */
+@Slf4j
 @RestControllerAdvice
 public class PaymentExceptionHandler {
 
-    /**
-     * Handle all PaymentServiceException exceptions.
-     */
-    @ExceptionHandler(PaymentServiceException.class)
-    public ResponseEntity<ErrorDto> handlePaymentServiceException(PaymentServiceException ex) {
-        ErrorDto errorResponse = new ErrorDto(
-                ex.getErrorMessage().name(),
-                ex.getErrorMessage().getMessage()
-        );
+    @ExceptionHandler(PaymentNotFoundException.class)
+    public ResponseEntity<ErrorDto> handlePaymentNotFoundException(PaymentNotFoundException ex) {
+        log.warn("Payment not found: {}", ex.getMessage());
 
-        HttpStatus status = determineHttpStatus(ex);
-        return new ResponseEntity<>(errorResponse, status);
+        ErrorDto error = new ErrorDto(
+                ErrorMessage.PAYMENT_NOT_FOUND.name(),
+                ErrorMessage.PAYMENT_NOT_FOUND.getMessage()
+        );
+        return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
     }
 
-    /**
-     * Map exception types to HTTP status codes.
-     */
-    private HttpStatus determineHttpStatus(PaymentServiceException ex) {
-        if (ex instanceof PaymentNotFoundException) {
-            return HttpStatus.NOT_FOUND;
-        }
-        return HttpStatus.INTERNAL_SERVER_ERROR;
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorDto> handleGenericException(Exception ex) {
+        log.error("Unhandled error", ex);
+
+        ErrorDto error = new ErrorDto(
+                ErrorMessage.INTERNAL_SERVER_ERROR.name(),
+                ErrorMessage.INTERNAL_SERVER_ERROR.getMessage()
+        );
+        return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }

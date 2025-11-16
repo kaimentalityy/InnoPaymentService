@@ -1,6 +1,6 @@
 package com.innowise.model.entity;
 
-import com.innowise.model.dto.PaymentStatus;
+import com.innowise.model.enums.PaymentStatus;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;

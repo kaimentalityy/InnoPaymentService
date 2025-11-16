@@ -1,7 +1,8 @@
 package com.innowise.model.entity;
 
-import com.innowise.model.dto.PaymentStatus;
+import com.innowise.model.enums.PaymentStatus;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
@@ -15,6 +16,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Document(collection = "payments")
+@Builder
 public class Payment {
 
     @Id

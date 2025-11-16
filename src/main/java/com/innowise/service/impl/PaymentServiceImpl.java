@@ -5,16 +5,19 @@ import com.innowise.exception.PaymentNotFoundException;
 import com.innowise.mapper.PaymentMapper;
 import com.innowise.model.dto.PaymentCreateRequestDto;
 import com.innowise.model.dto.PaymentResponseDto;
-import com.innowise.model.dto.PaymentStatus;
 import com.innowise.model.entity.Payment;
+import com.innowise.model.enums.PaymentStatus;
 import com.innowise.service.PaymentService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
 
 import java.time.LocalDateTime;
 
 @Service
+@Validated
 @RequiredArgsConstructor
 public class PaymentServiceImpl implements PaymentService {
 
@@ -23,7 +26,7 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     @Transactional
-    public PaymentResponseDto createPayment(PaymentCreateRequestDto dto) {
+    public PaymentResponseDto createPayment(@Valid PaymentCreateRequestDto dto) {
         Payment payment = paymentMapper.toEntity(dto);
         payment.setStatus(PaymentStatus.PENDING);
         payment.setTimestamp(LocalDateTime.now());

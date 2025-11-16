@@ -1,5 +1,6 @@
 package com.innowise.event;
 
+import com.innowise.model.enums.OrderStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -20,7 +21,7 @@ public class OrderCreatedEvent {
     private Long orderId;
     private Long userId;
     private BigDecimal totalAmount;
-    private String status;
+    private OrderStatus status;
     private List<OrderItemEvent> items;
 }
 

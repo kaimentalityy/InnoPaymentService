@@ -1,17 +1,14 @@
 package com.innowise.exception;
 
-import java.io.Serial;
+import com.innowise.model.enums.ErrorMessage;
 
-public class PaymentNotFoundException extends PaymentServiceException {
-
-    @Serial
-    private static final long serialVersionUID = 1L;
+public class PaymentNotFoundException extends RuntimeException {
 
     public PaymentNotFoundException() {
-        super(ErrorMessage.PAYMENT_NOT_FOUND);
+        super(ErrorMessage.PAYMENT_NOT_FOUND.getMessage());
     }
 
     public PaymentNotFoundException(Throwable cause) {
-        super(ErrorMessage.PAYMENT_NOT_FOUND, cause);
+        super(ErrorMessage.PAYMENT_NOT_FOUND.getMessage(), cause);
     }
 }

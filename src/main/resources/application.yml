@@ -2,6 +2,11 @@ spring:
   data:
     mongodb:
       uri: mongodb://root:secret@localhost:27017/payment?authSource=admin
+      auto-index-creation: false
+
+  liquibase:
+    enabled: true
+    change-log: classpath:db/changelog/db.changelog-master.xml
 
   kafka:
     bootstrap-servers: kafka:29092
@@ -15,6 +20,12 @@ spring:
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
         spring.json.trusted.packages: "com.innowise.*"
+
+random-api:
+  url: https://www.randomnumberapi.com
+  min: 100
+  max: 1000
+  count: 1
 
 server:
   port: 8087

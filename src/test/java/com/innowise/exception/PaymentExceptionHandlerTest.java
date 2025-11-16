@@ -1,6 +1,7 @@
 package com.innowise.exception;
 
 import com.innowise.model.dto.ErrorDto;
+import com.innowise.model.enums.ErrorMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
@@ -18,55 +19,30 @@ class PaymentExceptionHandlerTest {
     }
 
     @Test
-    void handlePaymentNotFoundException_ShouldReturnNotFoundStatus() {
-        // given
+    void handlePaymentNotFoundException_ShouldReturnNotFound() {
         PaymentNotFoundException exception = new PaymentNotFoundException();
 
-        // when
-        ResponseEntity<ErrorDto> response = handler.handlePaymentServiceException(exception);
+        ResponseEntity<ErrorDto> response = handler.handlePaymentNotFoundException(exception);
 
-        // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
         assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().getErrorCode()).isEqualTo(ErrorMessage.PAYMENT_NOT_FOUND.name());
-        assertThat(response.getBody().getErrorMessage()).isEqualTo(ErrorMessage.PAYMENT_NOT_FOUND.getMessage());
+        assertThat(response.getBody().getErrorCode())
+                .isEqualTo(ErrorMessage.PAYMENT_NOT_FOUND.name());
+        assertThat(response.getBody().getErrorMessage())
+                .isEqualTo(ErrorMessage.PAYMENT_NOT_FOUND.getMessage());
     }
 
     @Test
-    void handleGenericPaymentServiceException_ShouldReturnInternalServerError() {
-        // given
-        PaymentServiceException exception = new PaymentServiceException(ErrorMessage.PAYMENT_NOT_FOUND);
+    void handleGenericException_ShouldReturnInternalServerError() {
+        Exception exception = new RuntimeException("Something went wrong");
 
-        // when
-        ResponseEntity<ErrorDto> response = handler.handlePaymentServiceException(exception);
+        ResponseEntity<ErrorDto> response = handler.handleGenericException(exception);
 
-        // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
         assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().getErrorCode()).isEqualTo(ErrorMessage.PAYMENT_NOT_FOUND.name());
-        assertThat(response.getBody().getErrorMessage()).isEqualTo(ErrorMessage.PAYMENT_NOT_FOUND.getMessage());
-    }
-
-    @Test
-    void determineHttpStatus_ShouldReturnNotFound_ForPaymentNotFoundException() throws Exception {
-        var method = PaymentExceptionHandler.class
-                .getDeclaredMethod("determineHttpStatus", PaymentServiceException.class);
-        method.setAccessible(true);
-
-        HttpStatus status = (HttpStatus) method.invoke(handler, new PaymentNotFoundException());
-
-        assertThat(status).isEqualTo(HttpStatus.NOT_FOUND);
-    }
-
-    @Test
-    void determineHttpStatus_ShouldReturnInternalServerError_ForGenericException() throws Exception {
-        var method = PaymentExceptionHandler.class
-                .getDeclaredMethod("determineHttpStatus", PaymentServiceException.class);
-        method.setAccessible(true);
-
-        HttpStatus status = (HttpStatus) method.invoke(handler,
-                new PaymentServiceException(ErrorMessage.PAYMENT_NOT_FOUND));
-
-        assertThat(status).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+        assertThat(response.getBody().getErrorCode())
+                .isEqualTo(ErrorMessage.INTERNAL_SERVER_ERROR.name());
+        assertThat(response.getBody().getErrorMessage())
+                .isEqualTo(ErrorMessage.INTERNAL_SERVER_ERROR.getMessage());
     }
 }
