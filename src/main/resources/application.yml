@@ -20,9 +20,13 @@ spring:
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
         spring.json.trusted.packages: "com.innowise.*"
+    topic:
+      order-events: order-events
+      payment-events: payment-events
 
 random-api:
-  url: https://www.randomnumberapi.com
+  base-url: https://www.randomnumberapi.com
+  path: /api/v1.0/random
   min: 100
   max: 1000
   count: 1
