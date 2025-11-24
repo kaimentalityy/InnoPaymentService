@@ -15,6 +15,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.concurrent.ExecutionException;
+
 /**
  * Implementation of {@link PaymentProcessingService} that orchestrates the
  * payment processing workflow.
@@ -92,8 +94,15 @@ public class PaymentProcessingServiceImpl implements PaymentProcessingService {
 
         try {
             paymentEventProducer.sendPaymentCreatedEvent(paymentEvent);
-        } catch (Exception e) {
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.error("Interrupted while sending payment event for paymentId={}", updated.getId(), e);
             paymentService.updatePaymentStatus(updated.getId(), PaymentStatus.FAILED);
+            return;
+        } catch (ExecutionException e) {
+            paymentService.updatePaymentStatus(updated.getId(), PaymentStatus.FAILED);
+            log.error("Failed to send payment event for paymentId={}", updated.getId(), e);
+            throw new RuntimeException(e);
         }
         log.info("Payment processed for order {} with status {}", event.getOrderId(), status);
     }
