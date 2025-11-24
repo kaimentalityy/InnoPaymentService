@@ -77,7 +77,7 @@ class PaymentCreateRequestDtoTest {
         assertTrue(toString.contains("paymentAmount=5.5"));
     }
 
-    // ✅ Validation tests
+    
     @Test
     void whenValid_thenNoViolations() {
         PaymentCreateRequestDto dto = new PaymentCreateRequestDto(1L, 2L, BigDecimal.valueOf(1.00));
