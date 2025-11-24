@@ -19,7 +19,7 @@ class PaymentMapperTest {
 
     @BeforeEach
     void setUp() {
-        // Get MapStruct implementation
+        
         paymentMapper = Mappers.getMapper(PaymentMapper.class);
     }
 
@@ -38,7 +38,7 @@ class PaymentMapperTest {
         assertEquals(dto.getUserId(), entity.getUserId());
         assertEquals(dto.getPaymentAmount(), entity.getPaymentAmount());
 
-        // Fields ignored in mapping should remain null
+        
         assertNull(entity.getId());
         assertNull(entity.getStatus());
         assertNull(entity.getTimestamp());

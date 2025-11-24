@@ -386,7 +386,7 @@ class PaymentProcessingServiceImplTest {
                 assertThat(paymentEventCaptor.getValue().getStatus()).isEqualTo(PaymentStatus.SUCCESS);
         }
 
-        // Tests for FAILED status (odd numbers)
+        
         @Test
         void processPayment_shouldProcessFailedPayment_whenNumberIsOdd()
                         throws ExecutionException, InterruptedException {
@@ -460,7 +460,7 @@ class PaymentProcessingServiceImplTest {
                 verify(paymentService).updatePaymentStatus("payment-123", PaymentStatus.FAILED);
         }
 
-        // Tests for exception handling
+        
         @Test
         void processPayment_shouldMarkPaymentAsFailed_whenEventPublishingFails()
                         throws ExecutionException, InterruptedException {
