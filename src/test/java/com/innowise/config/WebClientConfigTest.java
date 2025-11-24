@@ -25,7 +25,7 @@ class WebClientConfigTest {
 
     @Test
     void randomApiWebClient_shouldCreateWebClient_withCorrectBaseUrl() {
-        when(randomApiProperties.getBaseUrl()).thenReturn("https:
+        when(randomApiProperties.getBaseUrl()).thenReturn("https://api.random.org");
 
         WebClient webClient = webClientConfig.randomApiWebClient();
 
@@ -34,7 +34,7 @@ class WebClientConfigTest {
 
     @Test
     void randomApiWebClient_shouldCreateWebClient_withDifferentBaseUrl() {
-        when(randomApiProperties.getBaseUrl()).thenReturn("https:
+        when(randomApiProperties.getBaseUrl()).thenReturn("https://example.com");
 
         WebClient webClient = webClientConfig.randomApiWebClient();
 
@@ -43,7 +43,7 @@ class WebClientConfigTest {
 
     @Test
     void randomApiWebClient_shouldCreateWebClient_withLocalhost() {
-        when(randomApiProperties.getBaseUrl()).thenReturn("http:
+        when(randomApiProperties.getBaseUrl()).thenReturn("http://localhost:8080");
 
         WebClient webClient = webClientConfig.randomApiWebClient();
 
@@ -52,7 +52,7 @@ class WebClientConfigTest {
 
     @Test
     void randomApiWebClient_shouldCreateWebClient_withHttpsUrl() {
-        when(randomApiProperties.getBaseUrl()).thenReturn("https:
+        when(randomApiProperties.getBaseUrl()).thenReturn("https://secure-api.example.com");
 
         WebClient webClient = webClientConfig.randomApiWebClient();
 
@@ -61,7 +61,7 @@ class WebClientConfigTest {
 
     @Test
     void randomApiWebClient_shouldCreateWebClient_withHttpUrl() {
-        when(randomApiProperties.getBaseUrl()).thenReturn("http:
+        when(randomApiProperties.getBaseUrl()).thenReturn("http://api.example.com");
 
         WebClient webClient = webClientConfig.randomApiWebClient();
 
