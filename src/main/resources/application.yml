@@ -1,0 +1,35 @@
+spring:
+  data:
+    mongodb:
+      uri: mongodb://root:secret@localhost:27017/payment?authSource=admin
+      auto-index-creation: false
+
+  liquibase:
+    enabled: true
+    change-log: classpath:db/changelog/db.changelog-master.xml
+
+  kafka:
+    bootstrap-servers: kafka:29092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    consumer:
+      group-id: payment-service
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "com.innowise.*"
+    topic:
+      order-events: order-events
+      payment-events: payment-events
+
+random-api:
+  base-url: https://www.randomnumberapi.com
+  path: /api/v1.0/random
+  min: 100
+  max: 1000
+  count: 1
+
+server:
+  port: 8087
