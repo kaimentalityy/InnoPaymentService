@@ -48,7 +48,9 @@ public class OrderEventConsumer {
     @KafkaListener(topics = "${spring.kafka.topic.order-events}", groupId = "${spring.kafka.consumer.group-id}")
     public void handleOrderCreatedEvent(OrderCreatedEvent event) {
 
-        if (!EventType.ORDER_CREATE.toString().equals(event.getEventType())) {
+        log.info("Received event type: '{}'", event.getEventType());
+
+        if (!EventType.ORDER_CREATE.toString().equals(event.getEventType().toString())) {
             log.warn("Received unsupported event type: {}", event.getEventType());
             return;
         }

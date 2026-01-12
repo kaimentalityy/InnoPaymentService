@@ -62,6 +62,16 @@ public class KafkaConfig {
     }
 
     @Bean
+    public NewTopic orderEventsDltTopic() {
+        return new NewTopic(orderTopic + ".DLT", 3, (short) 1);
+    }
+
+    @Bean
+    public NewTopic paymentEventsDltTopic() {
+        return new NewTopic(paymentTopic + ".DLT", 3, (short) 1);
+    }
+
+    @Bean
     public ConsumerFactory<String, Object> consumerFactory() {
         Map<String, Object> props = new HashMap<>();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
@@ -99,7 +109,7 @@ public class KafkaConfig {
         configProps.put(ProducerConfig.DELIVERY_TIMEOUT_MS_CONFIG, 45000);
         configProps.put(ProducerConfig.BATCH_SIZE_CONFIG, 16384);
         configProps.put(ProducerConfig.LINGER_MS_CONFIG, 5);
-        configProps.put(ProducerConfig.COMPRESSION_TYPE_CONFIG, "snappy");
+        configProps.put(ProducerConfig.COMPRESSION_TYPE_CONFIG, "gzip");
 
         return new DefaultKafkaProducerFactory<>(configProps);
     }

@@ -1,5 +1,6 @@
 package com.innowise.event;
 
+import com.innowise.model.enums.EventType;
 import com.innowise.model.enums.OrderStatus;
 import org.junit.jupiter.api.Test;
 
@@ -14,13 +15,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 class OrderCreatedEventTest {
 
     @Test
-    void noArgsConstructor_shouldCreateEmptyEvent() {
+    void noArgsConstructor_shouldCreateEventWithDefaults() {
         OrderCreatedEvent event = new OrderCreatedEvent();
 
         assertThat(event).isNotNull();
-        assertThat(event.getEventId()).isNull();
-        assertThat(event.getEventType()).isNull();
-        assertThat(event.getEventTimestamp()).isNull();
+        assertThat(event.getEventId()).isNotNull();
+        assertThat(event.getEventType()).isEqualTo(EventType.ORDER_CREATE);
+        assertThat(event.getEventTimestamp()).isNotNull();
         assertThat(event.getOrderId()).isNull();
         assertThat(event.getUserId()).isNull();
         assertThat(event.getTotalAmount()).isNull();
@@ -31,7 +32,7 @@ class OrderCreatedEventTest {
     @Test
     void allArgsConstructor_shouldCreateEventWithAllFields() {
         String eventId = "event-123";
-        String eventType = "ORDER_CREATED";
+        EventType eventType = EventType.ORDER_CREATE;
         LocalDateTime timestamp = LocalDateTime.now();
         Long orderId = 100L;
         Long userId = 200L;
@@ -40,7 +41,7 @@ class OrderCreatedEventTest {
         List<OrderItemEvent> items = createTestItems();
 
         OrderCreatedEvent event = new OrderCreatedEvent(
-                eventId, eventType, timestamp, orderId, userId, totalAmount, status, items
+                eventId, eventType, timestamp, orderId, userId, status, totalAmount, items
         );
 
         assertThat(event.getEventId()).isEqualTo(eventId);
@@ -56,7 +57,7 @@ class OrderCreatedEventTest {
     @Test
     void builder_shouldCreateEventWithAllFields() {
         String eventId = "event-456";
-        String eventType = "ORDER_CREATED";
+        EventType eventType = EventType.ORDER_CREATE;
         LocalDateTime timestamp = LocalDateTime.now();
         Long orderId = 300L;
         Long userId = 400L;
@@ -94,9 +95,9 @@ class OrderCreatedEventTest {
 
         assertThat(event.getOrderId()).isEqualTo(500L);
         assertThat(event.getUserId()).isEqualTo(600L);
-        assertThat(event.getEventId()).isNull();
-        assertThat(event.getEventType()).isNull();
-        assertThat(event.getEventTimestamp()).isNull();
+        assertThat(event.getEventId()).isNotNull(); // Default value from builder
+        assertThat(event.getEventType()).isEqualTo(EventType.ORDER_CREATE); // Default value
+        assertThat(event.getEventTimestamp()).isNotNull(); // Default value
         assertThat(event.getTotalAmount()).isNull();
         assertThat(event.getStatus()).isNull();
         assertThat(event.getItems()).isNull();
@@ -106,7 +107,7 @@ class OrderCreatedEventTest {
     void setters_shouldUpdateAllFields() {
         OrderCreatedEvent event = new OrderCreatedEvent();
         String eventId = "event-789";
-        String eventType = "ORDER_UPDATED";
+        EventType eventType = EventType.ORDER_CREATE;
         LocalDateTime timestamp = LocalDateTime.now();
         Long orderId = 700L;
         Long userId = 800L;
@@ -136,7 +137,7 @@ class OrderCreatedEventTest {
     @Test
     void getters_shouldReturnCorrectValues() {
         String eventId = "event-get";
-        String eventType = "ORDER_GET";
+        EventType eventType = EventType.ORDER_CREATE;
         LocalDateTime timestamp = LocalDateTime.now();
         Long orderId = 111L;
         Long userId = 222L;
@@ -145,7 +146,7 @@ class OrderCreatedEventTest {
         List<OrderItemEvent> items = createTestItems();
 
         OrderCreatedEvent event = new OrderCreatedEvent(
-                eventId, eventType, timestamp, orderId, userId, totalAmount, status, items
+                eventId, eventType, timestamp, orderId, userId, status, totalAmount, items
         );
 
         assertThat(event.getEventId()).isEqualTo(eventId);
@@ -200,7 +201,7 @@ class OrderCreatedEventTest {
     void toString_shouldContainAllFields() {
         OrderCreatedEvent event = OrderCreatedEvent.builder()
                 .eventId("event-str")
-                .eventType("ORDER_TEST")
+                .eventType(EventType.ORDER_CREATE)
                 .orderId(100L)
                 .userId(200L)
                 .totalAmount(new BigDecimal("150.00"))
@@ -210,7 +211,7 @@ class OrderCreatedEventTest {
         String result = event.toString();
 
         assertThat(result).contains("event-str");
-        assertThat(result).contains("ORDER_TEST");
+        assertThat(result).contains("ORDER_CREATE");
         assertThat(result).contains("100");
         assertThat(result).contains("200");
         assertThat(result).contains("150.00");

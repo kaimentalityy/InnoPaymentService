@@ -30,7 +30,7 @@ class OrderEventConsumerTest {
     @BeforeEach
     void setUp() {
         validEvent = OrderCreatedEvent.builder()
-                .eventType(EventType.ORDER_CREATE.name())
+                .eventType(EventType.ORDER_CREATE)
                 .orderId(100L)
                 .userId(200L)
                 .totalAmount(new BigDecimal("150.00"))
@@ -46,24 +46,9 @@ class OrderEventConsumerTest {
     }
 
     @Test
-    void handleOrderCreatedEvent_shouldNotProcessEvent_whenEventTypeIsNotOrderCreate() {
-        OrderCreatedEvent invalidTypeEvent = OrderCreatedEvent.builder()
-                .eventType("ORDER_UPDATE")
-                .orderId(100L)
-                .userId(200L)
-                .totalAmount(new BigDecimal("150.00"))
-                .status(OrderStatus.CONFIRMED)
-                .build();
-
-        orderEventConsumer.handleOrderCreatedEvent(invalidTypeEvent);
-
-        verify(paymentProcessingService, never()).processPayment(any());
-    }
-
-    @Test
     void handleOrderCreatedEvent_shouldThrowException_whenOrderIdIsNull() {
         OrderCreatedEvent nullOrderIdEvent = OrderCreatedEvent.builder()
-                .eventType(EventType.ORDER_CREATE.name())
+                .eventType(EventType.ORDER_CREATE)
                 .orderId(null)
                 .userId(200L)
                 .totalAmount(new BigDecimal("150.00"))
@@ -78,54 +63,9 @@ class OrderEventConsumerTest {
     }
 
     @Test
-    void handleOrderCreatedEvent_shouldNotProcessEvent_whenEventTypeIsOrderDelete() {
-        OrderCreatedEvent deleteEvent = OrderCreatedEvent.builder()
-                .eventType("ORDER_DELETE")
-                .orderId(100L)
-                .userId(200L)
-                .totalAmount(new BigDecimal("150.00"))
-                .status(OrderStatus.CONFIRMED)
-                .build();
-
-        orderEventConsumer.handleOrderCreatedEvent(deleteEvent);
-
-        verify(paymentProcessingService, never()).processPayment(any());
-    }
-
-    @Test
-    void handleOrderCreatedEvent_shouldNotProcessEvent_whenEventTypeIsOrderCancel() {
-        OrderCreatedEvent cancelEvent = OrderCreatedEvent.builder()
-                .eventType("ORDER_CANCEL")
-                .orderId(100L)
-                .userId(200L)
-                .totalAmount(new BigDecimal("150.00"))
-                .status(OrderStatus.CONFIRMED)
-                .build();
-
-        orderEventConsumer.handleOrderCreatedEvent(cancelEvent);
-
-        verify(paymentProcessingService, never()).processPayment(any());
-    }
-
-    @Test
-    void handleOrderCreatedEvent_shouldNotProcessEvent_whenEventTypeIsEmpty() {
-        OrderCreatedEvent emptyTypeEvent = OrderCreatedEvent.builder()
-                .eventType("")
-                .orderId(100L)
-                .userId(200L)
-                .totalAmount(new BigDecimal("150.00"))
-                .status(OrderStatus.CONFIRMED)
-                .build();
-
-        orderEventConsumer.handleOrderCreatedEvent(emptyTypeEvent);
-
-        verify(paymentProcessingService, never()).processPayment(any());
-    }
-
-    @Test
     void handleOrderCreatedEvent_shouldProcessEvent_withZeroAmount() {
         OrderCreatedEvent zeroAmountEvent = OrderCreatedEvent.builder()
-                .eventType(EventType.ORDER_CREATE.name())
+                .eventType(EventType.ORDER_CREATE)
                 .orderId(300L)
                 .userId(400L)
                 .totalAmount(BigDecimal.ZERO)
@@ -140,7 +80,7 @@ class OrderEventConsumerTest {
     @Test
     void handleOrderCreatedEvent_shouldProcessEvent_withLargeAmount() {
         OrderCreatedEvent largeAmountEvent = OrderCreatedEvent.builder()
-                .eventType(EventType.ORDER_CREATE.name())
+                .eventType(EventType.ORDER_CREATE)
                 .orderId(500L)
                 .userId(600L)
                 .totalAmount(new BigDecimal("999999.99"))
@@ -162,7 +102,7 @@ class OrderEventConsumerTest {
     @Test
     void handleOrderCreatedEvent_shouldProcessEvent_withDifferentOrderStatuses() {
         OrderCreatedEvent pendingEvent = OrderCreatedEvent.builder()
-                .eventType(EventType.ORDER_CREATE.name())
+                .eventType(EventType.ORDER_CREATE)
                 .orderId(700L)
                 .userId(800L)
                 .totalAmount(new BigDecimal("250.00"))
@@ -177,7 +117,7 @@ class OrderEventConsumerTest {
     @Test
     void handleOrderCreatedEvent_shouldThrowException_whenOrderIdIsNull_evenWithValidEventType() {
         OrderCreatedEvent event = OrderCreatedEvent.builder()
-                .eventType(EventType.ORDER_CREATE.name())
+                .eventType(EventType.ORDER_CREATE)
                 .orderId(null)
                 .userId(100L)
                 .totalAmount(new BigDecimal("50.00"))
@@ -207,24 +147,9 @@ class OrderEventConsumerTest {
     }
 
     @Test
-    void handleOrderCreatedEvent_shouldNotProcessEvent_whenEventTypeIsLowerCase() {
-        OrderCreatedEvent lowerCaseEvent = OrderCreatedEvent.builder()
-                .eventType("order_create")
-                .orderId(100L)
-                .userId(200L)
-                .totalAmount(new BigDecimal("150.00"))
-                .status(OrderStatus.CONFIRMED)
-                .build();
-
-        orderEventConsumer.handleOrderCreatedEvent(lowerCaseEvent);
-
-        verify(paymentProcessingService, never()).processPayment(any());
-    }
-
-    @Test
     void handleOrderCreatedEvent_shouldProcessEvent_withNegativeAmount() {
         OrderCreatedEvent negativeAmountEvent = OrderCreatedEvent.builder()
-                .eventType(EventType.ORDER_CREATE.name())
+                .eventType(EventType.ORDER_CREATE)
                 .orderId(900L)
                 .userId(1000L)
                 .totalAmount(new BigDecimal("-50.00"))
@@ -239,7 +164,7 @@ class OrderEventConsumerTest {
     @Test
     void handleOrderCreatedEvent_shouldProcessEvent_withNullAmount() {
         OrderCreatedEvent nullAmountEvent = OrderCreatedEvent.builder()
-                .eventType(EventType.ORDER_CREATE.name())
+                .eventType(EventType.ORDER_CREATE)
                 .orderId(1100L)
                 .userId(1200L)
                 .totalAmount(null)
@@ -254,7 +179,7 @@ class OrderEventConsumerTest {
     @Test
     void handleOrderCreatedEvent_shouldProcessEvent_withNullUserId() {
         OrderCreatedEvent nullUserIdEvent = OrderCreatedEvent.builder()
-                .eventType(EventType.ORDER_CREATE.name())
+                .eventType(EventType.ORDER_CREATE)
                 .orderId(1300L)
                 .userId(null)
                 .totalAmount(new BigDecimal("100.00"))
@@ -269,7 +194,7 @@ class OrderEventConsumerTest {
     @Test
     void handleOrderCreatedEvent_shouldProcessEvent_withNullStatus() {
         OrderCreatedEvent nullStatusEvent = OrderCreatedEvent.builder()
-                .eventType(EventType.ORDER_CREATE.name())
+                .eventType(EventType.ORDER_CREATE)
                 .orderId(1400L)
                 .userId(1500L)
                 .totalAmount(new BigDecimal("200.00"))
@@ -291,21 +216,6 @@ class OrderEventConsumerTest {
                 .hasMessage("Payment processing failed");
 
         verify(paymentProcessingService).processPayment(validEvent);
-    }
-
-    @Test
-    void handleOrderCreatedEvent_shouldNotProcessEvent_whenEventTypeHasWhitespace() {
-        OrderCreatedEvent whitespaceEvent = OrderCreatedEvent.builder()
-                .eventType(" ORDER_CREATE ")
-                .orderId(1600L)
-                .userId(1700L)
-                .totalAmount(new BigDecimal("300.00"))
-                .status(OrderStatus.CONFIRMED)
-                .build();
-
-        orderEventConsumer.handleOrderCreatedEvent(whitespaceEvent);
-
-        verify(paymentProcessingService, never()).processPayment(any());
     }
 
     @Test
@@ -342,7 +252,7 @@ class OrderEventConsumerTest {
     @Test
     void handleOrderCreatedEvent_shouldThrowException_whenOrderIdIsNull_beforeProcessing() {
         OrderCreatedEvent event = OrderCreatedEvent.builder()
-                .eventType(EventType.ORDER_CREATE.name())
+                .eventType(EventType.ORDER_CREATE)
                 .orderId(null)
                 .userId(200L)
                 .totalAmount(new BigDecimal("100.00"))
@@ -358,7 +268,7 @@ class OrderEventConsumerTest {
 
     private OrderCreatedEvent createValidEvent(Long orderId, Long userId) {
         return OrderCreatedEvent.builder()
-                .eventType(EventType.ORDER_CREATE.name())
+                .eventType(EventType.ORDER_CREATE)
                 .orderId(orderId)
                 .userId(userId)
                 .totalAmount(new BigDecimal("100.00"))
@@ -368,7 +278,7 @@ class OrderEventConsumerTest {
 
     private OrderCreatedEvent createEventWithStatus(OrderStatus status) {
         return OrderCreatedEvent.builder()
-                .eventType(EventType.ORDER_CREATE.name())
+                .eventType(EventType.ORDER_CREATE)
                 .orderId(System.currentTimeMillis())
                 .userId(System.currentTimeMillis() + 1)
                 .totalAmount(new BigDecimal("150.00"))

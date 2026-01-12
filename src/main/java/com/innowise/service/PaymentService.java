@@ -3,6 +3,7 @@ package com.innowise.service;
 import com.innowise.model.dto.PaymentCreateRequestDto;
 import com.innowise.model.dto.PaymentResponseDto;
 import com.innowise.model.enums.PaymentStatus;
+import jakarta.validation.Valid;
 
 /**
  * Service interface for managing payment operations.
@@ -34,5 +35,5 @@ public interface PaymentService {
      * @return the created payment as a response DTO
      * @throws jakarta.validation.ConstraintViolationException if validation fails
      */
-    PaymentResponseDto createPayment(PaymentCreateRequestDto dto);
+    PaymentResponseDto createPayment(@Valid PaymentCreateRequestDto dto);
 }

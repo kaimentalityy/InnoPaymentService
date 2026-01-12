@@ -1,6 +1,6 @@
 package com.innowise.model.enums;
 
 public enum EventType {
-    PAYMENT_CREATED,
+    CREATE_PAYMENT,
     ORDER_CREATE
 }

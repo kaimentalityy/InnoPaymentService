@@ -13,6 +13,8 @@ spring:
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: true
     consumer:
       group-id: payment-service
       auto-offset-reset: earliest
@@ -20,6 +22,7 @@ spring:
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
         spring.json.trusted.packages: "com.innowise.*"
+        spring.json.use.type.headers: true
     topic:
       order-events: order-events
       payment-events: payment-events
