@@ -1,7 +1,10 @@
 spring:
+  application:
+    name: inno-payment-service
+
   data:
     mongodb:
-      uri: mongodb://root:secret@localhost:27017/payment?authSource=admin
+      uri: ${SPRING_DATA_MONGODB_URI:mongodb://root:secret@localhost:27017/payment_db?authSource=admin}
       auto-index-creation: false
 
   liquibase:
@@ -9,7 +12,7 @@ spring:
     change-log: classpath:db/changelog/db.changelog-master.xml
 
   kafka:
-    bootstrap-servers: kafka:29092
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:kafka:9092}
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
@@ -36,3 +39,29 @@ random-api:
 
 server:
   port: 8087
+
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    distribution:
+      percentiles-histogram:
+        '[http.server.requests]': true
+  tracing:
+    sampling:
+      probability: 1.0  
+  otlp:
+    tracing:
+      endpoint: ${TEMPO_ENDPOINT:http://tempo:4318/v1/traces}
+  loki:
+    url: ${LOKI_URL:http://loki:3100}
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
