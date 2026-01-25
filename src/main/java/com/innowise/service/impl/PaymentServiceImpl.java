@@ -8,6 +8,8 @@ import com.innowise.model.dto.PaymentResponseDto;
 import com.innowise.model.entity.Payment;
 import com.innowise.model.enums.PaymentStatus;
 import com.innowise.service.PaymentService;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Timer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,6 +43,11 @@ public class PaymentServiceImpl implements PaymentService {
     private final PaymentRepository paymentRepository;
     private final PaymentMapper paymentMapper;
 
+    private final Counter paymentsCreatedCounter;
+    private final Counter paymentsSuccessCounter;
+    private final Counter paymentsFailedCounter;
+    private final Timer paymentProcessingTimer;
+
     /**
      * Creates a new payment record with PENDING status.
      * <p>
@@ -56,11 +63,15 @@ public class PaymentServiceImpl implements PaymentService {
     @Override
     @Transactional
     public PaymentResponseDto createPayment(PaymentCreateRequestDto dto) {
-        Payment payment = paymentMapper.toEntity(dto);
-        payment.setStatus(PaymentStatus.PENDING);
-        payment.setTimestamp(LocalDateTime.now());
+        return paymentProcessingTimer.record(() -> {
+            Payment payment = paymentMapper.toEntity(dto);
+            payment.setStatus(PaymentStatus.PENDING);
+            payment.setTimestamp(LocalDateTime.now());
 
-        return paymentMapper.toDto(paymentRepository.save(payment));
+            Payment saved = paymentRepository.save(payment);
+            paymentsCreatedCounter.increment();
+            return paymentMapper.toDto(saved);
+        });
     }
 
     /**
@@ -81,6 +92,14 @@ public class PaymentServiceImpl implements PaymentService {
         Payment payment = paymentRepository.findById(id)
                 .orElseThrow(() -> new PaymentNotFoundException());
         payment.setStatus(newStatus);
-        return paymentMapper.toDto(paymentRepository.save(payment));
+        Payment saved = paymentRepository.save(payment);
+
+        if (newStatus == PaymentStatus.SUCCESS) {
+            paymentsSuccessCounter.increment();
+        } else if (newStatus == PaymentStatus.FAILED) {
+            paymentsFailedCounter.increment();
+        }
+
+        return paymentMapper.toDto(saved);
     }
 }
