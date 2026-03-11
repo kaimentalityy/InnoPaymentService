@@ -49,10 +49,16 @@ management:
   metrics:
     tags:
       application: ${spring.application.name}
+      service: payment-service
     distribution:
       percentiles-histogram:
         '[http.server.requests]': true
+  observations:
+    key-values:
+      application: ${spring.application.name}
+      service: payment-service
   tracing:
+    enabled: true
     sampling:
       probability: 1.0  
   otlp:
